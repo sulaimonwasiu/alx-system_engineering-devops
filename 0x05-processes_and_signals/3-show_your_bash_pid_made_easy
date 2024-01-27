@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-# display PID of specific process name
+# Get the list of process IDs whose name contains the word "bash"
 pgrep -l bash

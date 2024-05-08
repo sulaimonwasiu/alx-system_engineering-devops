@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+sudo service nginx stop
+
+# Remove Nginx package
+sudo apt remove nginx
+
+# Remove configuration files (optional)
+sudo apt purge nginx
+
+# Remove any leftover directories (optional)
+sudo rm -rf /etc/nginx /var/lib/nginx
+
+echo "Nginx uninstalled!"

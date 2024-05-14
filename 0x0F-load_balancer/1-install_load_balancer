@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+# Update and inform user
+echo -e "Updating package lists and performing checks...\n"
+sudo apt-get update -y &> /dev/null
+
+# Install function with safer file writing
+function install() {
+  command -v "$1" &> /dev/null
+  if [ $? -ne 0 ]; then
+    echo -e "	Installing: $1\n"
+    sudo apt-get install -y "$1" &> /dev/null
+  else
+    echo -e "	${1} is already installed.\n"
+  fi
+}
+
+# Install HAProxy
+install haproxy
+
+# Inform user about configuration setup
+echo -e "\nSetting up HAProxy configuration...\n"
+
+# Backup default config (more explicit)
+sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
+
+# Define server configuration with clear variable names
+server_frontend="
+frontend code-wise-tech-frontend
+  bind *:80
+  default_backend clickviral-tech-backend
+"
+
+server_backend="
+backend code-wise-tech-backend
+  balance roundrobin
+  server 472649-web-01 54.175.248.184:80 check
+  server 472649-web-02 54.210.95.49:80 check
+"
+
+server_defaults="
+defaults
+  mode http
+  timeout client 15s
+  timeout connect 10s
+  timeout server 15s
+  timeout http-request 10s
+"
+
+# Write configuration sections separately (safer)
+echo "$server_defaults" | sudo tee -a /etc/haproxy/haproxy.cfg
+echo "$server_frontend" | sudo tee -a /etc/haproxy/haproxy.cfg
+echo "$server_backend" | sudo tee -a /etc/haproxy/haproxy.cfg
+
+# Enable HAProxy service
+echo "ENABLED=1" | sudo tee /etc/default/haproxy
+
+# Manage HAProxy service
+if [ "$(pgrep -c haproxy)" -le 0 ]; then
+  sudo service haproxy start
+else
+  sudo service haproxy restart
+fi
+
+echo "HAProxy is configured for roundrobin load balancing on web-01 & web-02."
